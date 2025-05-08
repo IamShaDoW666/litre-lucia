@@ -1,15 +1,14 @@
 import "server-only";
 
 import { cookies } from "next/headers";
-import { decrypt } from "./session";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import prisma from "./prisma";
+import { validateSessionToken } from "./auth";
 
 export const verifySession = cache(async () => {
   console.log("VERIFYING SESSION");
-  const cookie = (await cookies()).get("session")?.value;
-  const session = await decrypt(cookie);
+  const session = await validateSessionToken();
 
   if (!session?.id) {
     redirect("/login");
@@ -22,11 +21,10 @@ export const getUser = cache(async () => {
   console.log("Fetching user from DB");
   const session = await verifySession();
   if (!session) return null;
-
   try {
     const user = await prisma.user.findUnique({
       where: {
-        id: session.userData.id as string,
+        id: session.userData.userId as string,
       },
     });
     return user;

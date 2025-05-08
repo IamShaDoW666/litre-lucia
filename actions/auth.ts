@@ -1,8 +1,18 @@
 "use server";
 
+export type SessionPayload = {
+  id: string;
+  email: string;
+  name: string;
+  profile: string;
+  userId: string;
+  expiresAt: number;
+};
+
+import { generateSessionToken, invalidateSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { createSession, deleteSession } from "@/lib/session";
-import { wait } from "@/lib/utils";
+import { createSession } from "@/lib/auth";
+
 import { loginSchema, LoginSchema } from "@/schema/loginSchema";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
@@ -44,17 +54,12 @@ export async function loginAction(values: LoginSchema) {
     };
   }
 
-  await createSession({
-    id: user.id,
-    email: user.email,
-    name: user.name!,
-    profile: user.profile!,
-  });
-
+  const token = generateSessionToken();
+  await createSession(token, user);
   redirect("/admin");
 }
 
 export async function logoutAction() {
-  await deleteSession();
+  await invalidateSession();
   redirect("/login");
 }
